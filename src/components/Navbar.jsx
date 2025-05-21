@@ -1,6 +1,6 @@
-import { Link } from 'react-router-dom';
-import { Home, ShoppingCart, LogIn, LogOut } from 'lucide-react'
-import logo from '../../public/icon.png'
+import { NavLink } from 'react-router-dom';
+import { Home, ShoppingCart, LogIn, LogOut } from 'lucide-react';
+import logo from '../../public/icon.png';
 
 function Navbar({ isLoggedIn, onLogout, cart }) {
     const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
@@ -17,15 +17,26 @@ function Navbar({ isLoggedIn, onLogout, cart }) {
             </div>
 
             <div className="container-fluid">
-                <Link className="navbar-brand text-light fw-bold" to="/">Tienda Red</Link>
+                <NavLink className="navbar-brand text-light fw-bold" to="/">Tienda Red</NavLink>
 
                 <div className="d-flex ms-auto">
-                    <Link to="/" className="btn btn-outline-light me-3 d-flex align-items-center">
+                    <NavLink
+                        to="/"
+                        className={({ isActive }) =>
+                            `btn me-3 d-flex align-items-center ${isActive ? 'btn-light text-dark' : 'btn-outline-light'}`
+                        }
+                    >
                         <Home size={16} className="me-1" />
                         Home
-                    </Link>
+                    </NavLink>
+
                     {isLoggedIn && (
-                        <Link to="/carrito" className="btn btn-outline-light me-3 d-flex align-items-center position-relative">
+                        <NavLink
+                            to="/carrito"
+                            className={({ isActive }) =>
+                                `btn me-3 d-flex align-items-center position-relative ${isActive ? 'btn-light text-dark' : 'btn-outline-light'}`
+                            }
+                        >
                             <ShoppingCart size={16} className="me-1" />
                             Carrito
                             {totalItems > 0 && (
@@ -33,26 +44,28 @@ function Navbar({ isLoggedIn, onLogout, cart }) {
                                     {totalItems}
                                 </span>
                             )}
-                        </Link>
+                        </NavLink>
                     )}
-                    {isLoggedIn
-                        ? <button
+
+                    {isLoggedIn ? (
+                        <button
                             className="btn btn-outline-light me-3 d-flex align-items-center"
                             onClick={onLogout}
                         >
                             <LogOut size={16} className="me-1" />
                             Cerrar sesión
                         </button>
-                        : <Link
+                    ) : (
+                        <NavLink
                             to="/login"
-                            className="btn btn-outline-light me-3 d-flex align-items-center"
+                            className={({ isActive }) =>
+                                `btn me-3 d-flex align-items-center ${isActive ? 'btn-light text-dark' : 'btn-outline-light'}`
+                            }
                         >
                             <LogIn size={16} className="me-1" />
                             Iniciar sesión
-                        </Link>
-                    }
-
-
+                        </NavLink>
+                    )}
                 </div>
             </div>
         </nav>
