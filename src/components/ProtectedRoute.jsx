@@ -1,10 +1,14 @@
+import { useContext } from "react";
 import { Navigate } from "react-router-dom";
+import { AuthContext } from "../context/AuthContext";
 import Swal from "sweetalert2";
 import withReactContent from "sweetalert2-react-content";
 
 const MySwal = withReactContent(Swal);
 
-function ProtectedRoute({ isLoggedIn, children }) {
+function ProtectedRoute({ children }) {
+    const { isLoggedIn } = useContext(AuthContext);
+
     if (!isLoggedIn) {
         MySwal.fire({
             icon: "warning",

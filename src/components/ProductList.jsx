@@ -1,90 +1,145 @@
-import { useEffect, useState } from "react";
-import ProductCard from "./ProductCard";
+import { useContext, useState } from 'react';
+import { ProductContext } from '../context/ProductContext';
+import { CartContext } from '../context/CartContext';
+import { AuthContext } from '../context/AuthContext';
+import ProductCard from './ProductCard';
 import { Link } from 'react-router-dom';
-import { translateCategory } from "../utils/categoryTranslator";
+import SEO from './SEO';
+import { toast } from 'react-toastify';
 
-function ProductList({ onAddToCart }) {
-    const [products, setProducts] = useState([]);
-    const [categories, setCategories] = useState([]);
-    const [selectedCategory, setSelectedCategory] = useState("all");
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
+function ProductList() {
+    const { addToCart } = useContext(CartContext);
+    const { isLoggedIn } = useContext(AuthContext);
+    const { products, loading, error } = useContext(ProductContext);
+    const [selectedCategory, setSelectedCategory] = useState("Todos");
+    const [currentPage, setCurrentPage] = useState(1);
+    const [searchTerm, setSearchTerm] = useState("");
+    const productsPerPage = 6;
 
-    useEffect(() => {
-        fetch("https://fakestoreapi.com/products/categories")
-            .then(res => res.json())
-            .then(data => setCategories(data))
-            .catch(() => setCategories([]));
-    }, []);
+    const categories = ["Todos", ...new Set(products.map(product => product.category))];
 
-    useEffect(() => {
-        setLoading(true);
-        const url =
-            selectedCategory === "all"
-                ? "https://fakestoreapi.com/products"
-                : `https://fakestoreapi.com/products/category/${selectedCategory}`;
+    const filteredProducts = products.filter(product => {
+        const matchesCategory = selectedCategory === "Todos" || product.category === selectedCategory;
+        const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase());
+        return matchesCategory && matchesSearch;
+    });
 
-        fetch(url)
-            .then(res => res.json())
-            .then(data => {
-                setProducts(data);
-                setLoading(false);
-            })
-            .catch(() => {
-                setError("Error al cargar productos");
-                setLoading(false);
-            });
-    }, [selectedCategory]);
+    const indexOfLastProduct = currentPage * productsPerPage;
+    const indexOfFirstProduct = indexOfLastProduct - productsPerPage;
+    const currentProducts = filteredProducts.slice(indexOfFirstProduct, indexOfLastProduct);
+    const totalPages = Math.ceil(filteredProducts.length / productsPerPage);
 
+    if (loading) return <div className="text-center mt-5"><div className="spinner-border text-light"></div></div>;
+    if (error) return <div className="alert alert-danger m-3">{error}</div>;
+
+    const handleAddToCart = (product) => {
+        addToCart(product);
+        toast.success(
+            isLoggedIn
+                ? `${product.name} agregado al carrito`
+                : `${product.name} agregado al carrito. Inicia sesión para verlo`,
+            {
+                position: "bottom-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+            }
+        );
+    };
     return (
-        <div className="container mt-4">
-            <div className="mb-4">
-                <label className="form-label fw-bold text-light">Filtrar por categoría:</label>
-                <select
-                    className="form-select"
-                    value={selectedCategory}
-                    onChange={(e) => setSelectedCategory(e.target.value)}
-                >
-                    <option value="all">Todas</option>
-                    {categories.map((cat, index) => (
-                        <option key={index} value={cat}>
-                            {translateCategory(cat)}
-                        </option>))}
-                </select>
+        <div className="container py-4">
+            <SEO
+                title="Catálogo de Productos"
+                description="Explora nuestra selección de productos"
+            />
+
+            <div className="row g-3 mb-4">
+                <div className="col-12 col-md-6">
+                    <input
+                        type="text"
+                        className="form-control"
+                        placeholder="Buscar productos..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                </div>
+                <div className="col-12 col-md-6">
+                    <select
+                        className="form-select"
+                        value={selectedCategory}
+                        onChange={(e) => setSelectedCategory(e.target.value)}
+                    >
+                        {categories.map(category => (
+                            <option key={category} value={category}>
+                                {category === "Todos" ? "Todas las categorías" : category}
+                            </option>
+                        ))}
+                    </select>
+                </div>
             </div>
 
-            <div className="row" style={{ minHeight: "400px" }}>
-                {loading ? (
-                    <div className="d-flex justify-content-center align-items-center" style={{ minHeight: "200px" }}>
-                        <div className="spinner-border text-light" role="status">
-                            <span className="visually-hidden">Cargando...</span>
-                        </div>
+            <div className="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-4">
+                {currentProducts.map(product => (
+                    <div key={product.id} className="col">
+                        <ProductCard
+                            product={product}
+                            onAddToCart={() => handleAddToCart(product)}
+                            detailLink={<Link to={`/producto/${product.id}`}>Ver detalles</Link>}
+                        />
                     </div>
-                ) : error ? (
-                    <div className="text-danger text-center mt-5">{error}</div>
-                ) : (
-                    products.map(product => (
-                        <div key={product.id} className="col-md-4 mb-4">
-                            <ProductCard
-                                product={product}
-                                onAddToCart={onAddToCart}
-                                detailLink={
-                                    <Link
-                                        to={`/producto/${product.id}`}
-                                        className="btn btn-outline-light btn-sm"
-                                    >
-                                        Ver detalles
-                                    </Link>
-                                }
-                            />
-                        </div>
-                    ))
-                )}
+                ))}
             </div>
+
+            {totalPages > 1 && (
+                <nav className="mt-4">
+                    <ul className="pagination justify-content-center">
+                        <li className={`page-item ${currentPage === 1 ? 'disabled' : ''}`}>
+                            <button
+                                className="page-link"
+                                onClick={() => setCurrentPage(prev => prev - 1)}
+                                disabled={currentPage === 1}
+                            >
+                                Anterior
+                            </button>
+                        </li>
+
+                        {[...Array(totalPages)].map((_, index) => (
+                            <li
+                                key={index}
+                                className={`page-item ${currentPage === index + 1 ? 'active' : ''}`}
+                            >
+                                <button
+                                    className="page-link"
+                                    onClick={() => setCurrentPage(index + 1)}
+                                >
+                                    {index + 1}
+                                </button>
+                            </li>
+                        ))}
+
+                        <li className={`page-item ${currentPage === totalPages ? 'disabled' : ''}`}>
+                            <button
+                                className="page-link"
+                                onClick={() => setCurrentPage(prev => prev + 1)}
+                                disabled={currentPage === totalPages}
+                            >
+                                Siguiente
+                            </button>
+                        </li>
+                    </ul>
+                </nav>
+            )}
+
+            {currentProducts.length === 0 && (
+                <div className="alert alert-info text-center mt-4">
+                    No se encontraron productos que coincidan con tu búsqueda.
+                </div>
+            )}
         </div>
     );
-
-
 }
 
 export default ProductList;
