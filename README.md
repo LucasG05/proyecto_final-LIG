@@ -6,7 +6,7 @@ Tienda Red es un eCommerce desarrollado con React que permite a los usuarios exp
 ## Características
 - Login simulado con local storage
 - Carrito de compras
-- Gestión de productos (CRUD)
+- Gestión de productos (CRUD) con MockAPI
 - Búsqueda y filtrado
 - Paginación
 - Diseño responsive
